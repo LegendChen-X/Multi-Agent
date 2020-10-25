@@ -126,27 +126,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
     """
     Your minimax agent (question 2)
     """
-    '''
-    def Minimax(gameState, bound, depth, num_agents):
-        if bound*n == depth or state.isLose() or state.isWin():
-            return self.evaluationFunction(gameState), "Stop"
-        if depth % num_agents == 0:
-            max = -99999999999
-            move = ""
-            for i in state.getLegalActions(0):
-                value, action = Minimax(state.generateSuccessor(0, i),bound,depth+1,num_agents)
-                if value > max:
-                    max = value
-                    move = i
-            return max, move
-        else:
-            min = 99999999999
-            turn = depth % n
-            for i in state.getLegalActions(turn):
-                value, action = Minimax(state.generateSuccessor(turn, i),bound,depth+1,num_agents)
-                if value < min: min =value
-            return min, " "
-     '''
 
     def getAction(self, gameState):
         """
@@ -172,8 +151,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        bound = self.depth
-        num_agents = gameState.getNumAgents()
         def Minimax(gameState, bound, depth, num_agents):
             if bound * num_agents == depth or gameState.isLose() or gameState.isWin():
                 return self.evaluationFunction(gameState), "Stop"
@@ -193,7 +170,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
                     value, action = Minimax(gameState.generateSuccessor(turn, i),bound,depth+1,num_agents)
                     if value < min: min = value
                 return min, " "
-        res = Minimax(gameState, bound, 0, num_agents)
+        res = Minimax(gameState, self.depth, 0, gameState.getNumAgents())
         return res[1]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
@@ -207,16 +184,12 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         "*** YOUR CODE HERE ***"
         def AlphaBeta(gameState, bound, depth, num_agents, alpha, beta):
-            if bound * num_agents == depth or gameState.isWin() or gameState.isLose():
-                return self.evaluationFunction(gameState), " "
-                
+            if bound * num_agents == depth or gameState.isWin() or gameState.isLose(): return self.evaluationFunction(gameState), " "
             turn = depth % num_agents
-            value = 0
+            value = 0.0
             best_move = " "
-            
             if not turn: value = -9999999999.0
             else: value = 9999999999.0
-            
             for move in gameState.getLegalActions(turn):
                 nxt_val, nxt_move = AlphaBeta(gameState.generateSuccessor(turn, move), bound, depth + 1, num_agents, alpha, beta)
                 if not turn:
@@ -228,16 +201,13 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
                     if value <= alpha: return value, best_move
                     beta = min(beta, value)
             return value, best_move
-            
-        res = AlphaBeta(gameState,self.depth,0,gameState.getNumAgents(),-999999999999.0,999999999999.0)
-        
+        res = AlphaBeta(gameState,self.depth,0, gameState.getNumAgents(), -999999999999.0, 999999999999.0)
         return res[1]
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
       Your expectimax agent (question 4)
     """
-
     def getAction(self, gameState):
         """
         Returns the expectimax action using self.depth and self.evaluationFunction
@@ -246,8 +216,21 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        #def Minimax(gameState, bound, depth, num_agents):
-        util.raiseNotDefined()
+        def Expectimax(gameState, bound, depth, num_agents):
+            if bound * num_agents == depth or gameState.isWin() or gameState.isLose():
+                return self.evaluationFunction(gameState), " "
+            turn = depth % num_agents
+            value = 0.0
+            best_move = ""
+            if not turn: value = -9999999999.0
+            else: value = 0.0
+            for move in gameState.getLegalActions(turn):
+                nxt_val, nxt_move = Expectimax(gameState.generateSuccessor(turn, move), bound, depth + 1, num_agents)
+                if not turn and value < nxt_val: value, best_move = nxt_val, move
+                else: value = value + nxt_val / len(gameState.getLegalActions(turn))
+            return value, best_move
+        res = Expectimax(gameState, self.depth, 0, gameState.getNumAgents())
+        return res[1]
 
 def betterEvaluationFunction(currentGameState):
     """
@@ -257,6 +240,15 @@ def betterEvaluationFunction(currentGameState):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
+    '''
+    currentPosition = currentGameState.getPacmanPosition()
+    currentGhost = currentGameState.getGhostStates()
+    scaredTime = [ghostState.scaredTimer for ghostState in newGhostStates]
+    foodList = currentGameState.getFood().asList()
+    if currentGameState.isLose(): return -999999999.9
+    if currentGameState.isWin(): return 999999999.9
+    evaluation = 0.0
+    '''
     util.raiseNotDefined()
 
 # Abbreviation
