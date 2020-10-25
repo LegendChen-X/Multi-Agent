@@ -121,12 +121,13 @@ class MultiAgentSearchAgent(Agent):
         self.evaluationFunction = util.lookup(evalFn, globals())
         self.depth = int(depth)
 
+
 class MinimaxAgent(MultiAgentSearchAgent):
     """
     Your minimax agent (question 2)
     """
-    
-    def Minimax(gameState,bound,depth,num_agents):
+    '''
+    def Minimax(gameState, bound, depth, num_agents):
         if bound*n == depth or state.isLose() or state.isWin():
             return self.evaluationFunction(gameState), "Stop"
         if depth % num_agents == 0:
@@ -145,7 +146,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
                 value, action = Minimax(state.generateSuccessor(turn, i),bound,depth+1,num_agents)
                 if value < min: min =value
             return min, " "
-            
+     '''
 
     def getAction(self, gameState):
         """
@@ -171,8 +172,29 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        
-        return self.Minimax(gameState,self.depth,0,gameState.getNumAgents())
+        bound = self.depth
+        num_agents = gameState.getNumAgents()
+        def Minimax(gameState, bound, depth, num_agents):
+            if bound*num_agents == depth or gameState.isLose() or gameState.isWin():
+                return self.evaluationFunction(gameState), "Stop"
+            turn = depth % num_agents
+            if not turn:
+                max = -99999999999
+                move = ""
+                for i in gameState.getLegalActions(0):
+                    value, action = Minimax(gameState.generateSuccessor(0, i),bound,depth+1,num_agents)
+                    if value > max:
+                        max = value
+                        move = i
+                return max, move
+            else:
+                min = 99999999999
+                for i in gameState.getLegalActions(turn):
+                    value, action = Minimax(gameState.generateSuccessor(turn, i),bound,depth+1,num_agents)
+                    if value < min: min = value
+                return min, " "
+        res = Minimax(gameState, bound, 0, num_agents)
+        return res[1]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
