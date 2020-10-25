@@ -175,7 +175,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
         bound = self.depth
         num_agents = gameState.getNumAgents()
         def Minimax(gameState, bound, depth, num_agents):
-            if bound*num_agents == depth or gameState.isLose() or gameState.isWin():
+            if bound * num_agents == depth or gameState.isLose() or gameState.isWin():
                 return self.evaluationFunction(gameState), "Stop"
             turn = depth % num_agents
             if not turn:
@@ -206,7 +206,32 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def AlphaBeta(gameState, bound, depth, num_agents, alpha, beta):
+            if bound * num_agents == depth or gameState.isWin() or gameState.isLose():
+                return self.evaluationFunction(gameState), " "
+                
+            turn = depth % num_agents
+            value = 0
+            best_move = " "
+            
+            if not turn: value = -9999999999.0
+            else: value = 9999999999.0
+            
+            for move in gameState.getLegalActions(turn):
+                nxt_val, nxt_move = AlphaBeta(gameState.generateSuccessor(turn, move), bound, depth + 1, num_agents, alpha, beta)
+                if not turn:
+                    if value < nxt_val : value, best_move = nxt_val, move
+                    if value >= beta: return value, best_move
+                    alpha = max(alpha, value)
+                else:
+                    if value > nxt_val: value, best_move = nxt_val, move
+                    if value <= alpha: return value, best_move
+                    beta = min(beta, value)
+            return value, best_move
+            
+        res = AlphaBeta(gameState,self.depth,0,gameState.getNumAgents(),-999999999999.0,999999999999.0)
+        
+        return res[1]
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
@@ -221,6 +246,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
+        #def Minimax(gameState, bound, depth, num_agents):
         util.raiseNotDefined()
 
 def betterEvaluationFunction(currentGameState):
