@@ -216,6 +216,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
+        '''
         def Expectimax(gameState, bound, depth, num_agents):
             best_move = ""
             if bound * num_agents == depth or gameState.isWin() or gameState.isLose():
@@ -229,8 +230,29 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 if not turn and value < nxt_val: value, best_move = nxt_val, move
                 else:
                     prob = 1.0 / float(len(gameState.getLegalActions(turn)))
-                    value = value + prob * nxt_val
+                    value += prob * nxt_val
+            if turn: value = value / float(len(gameState.getLegalActions(turn)))
             return value, best_move
+        '''
+        def Expectimax(gameState, bound, depth, num_agents):
+            best_move = ""
+            if bound * num_agents == depth or gameState.isWin() or gameState.isLose():
+                return self.evaluationFunction(gameState), best_move
+            turn = depth % num_agents
+            value = 0.0
+            if not turn:
+                value = -9999999999.0
+                for move in gameState.getLegalActions(turn):
+                    nxt_val, nxt_move = Expectimax(gameState.generateSuccessor(turn, move), bound, depth + 1, num_agents)
+                    if value < nxt_val: value, best_move = nxt_val, move
+                return value, best_move
+            else:
+                value = 0.0
+                for move in gameState.getLegalActions(turn):
+                    nxt_val, nxt_move = Expectimax(gameState.generateSuccessor(turn, move), bound, depth + 1, num_agents)
+                    value += float(nxt_val)
+                value = value / float(len(gameState.getLegalActions(turn)))
+                return value, best_move
         res = Expectimax(gameState, self.depth, 0, gameState.getNumAgents())
         return res[1]
 
@@ -242,16 +264,54 @@ def betterEvaluationFunction(currentGameState):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    '''
+    from math import sqrt
+    
     currentPosition = currentGameState.getPacmanPosition()
     currentGhost = currentGameState.getGhostStates()
-    scaredTime = [ghostState.scaredTimer for ghostState in newGhostStates]
     foodList = currentGameState.getFood().asList()
-    if currentGameState.isLose(): return -999999999.9
     if currentGameState.isWin(): return 999999999.9
+    if currentGameState.isLose(): return -999999999.9
     evaluation = 0.0
-    '''
-    util.raiseNotDefined()
+    
+    ghostDistance = []
+    for i in currentGameState.getGhostPositions(): ghostDistance.append(manhattanDistance(i,currentPosition))
+    
+    # If any ghost is near you, high danger with low evaluation score.
+    if currentGameState.hasWall(currentPosition[0], currentPosition[1]): return -999999999.9
+    if min(ghostDistance) < 2: evaluation -= 999999999.9
+    foodDistance = []
+    if foodList:
+        for i in foodList:
+            foodDistance.append(manhattanDistance(i,currentPosition))
+    if foodDistance:
+        evaluation -= 1.8 * min(foodDistance)
+        evaluation += sqrt(max(foodDistance))
+    else: return 999999999999.9
+    evaluation -= 1.8 * min(foodDistance)
+    evaluation += max(foodDistance)
+    evaluation -= 40 * len(foodList)
+    
+    unscaredGhost= []
+    scaredGhost = []
+    for i in currentGhost:
+        if i.scaredTimer: scaredGhost.append(i)
+        else: unscaredGhost.append(i)
+    unscaredDistance = []
+    scaredDistance = []
+    for i in unscaredGhost: unscaredDistance.append(manhattanDistance(i.getPosition(),currentPosition))
+    for i in scaredGhost: scaredDistance.append(manhattanDistance(i.getPosition(),currentPosition))
+    
+    if unscaredDistance and min(unscaredDistance) > 15:
+        evaluation -= 2.0 / min(unscaredDistance)
+    else: evaluation -= 2.0 / 15.0
+    
+    if scaredDistance: evaluation -= 2 * min(scaredDistance)
+    
+    evaluation -= -200 * len(currentGameState.getCapsules())
+    
+    evaluation += 0.99 * currentGameState.getScore()
+    
+    return evaluation
 
 # Abbreviation
 better = betterEvaluationFunction
