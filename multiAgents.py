@@ -184,10 +184,10 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         "*** YOUR CODE HERE ***"
         def AlphaBeta(gameState, bound, depth, num_agents, alpha, beta):
-            if bound * num_agents == depth or gameState.isWin() or gameState.isLose(): return self.evaluationFunction(gameState), " "
+            best_move = " "
+            if bound * num_agents == depth or gameState.isWin() or gameState.isLose(): return self.evaluationFunction(gameState), best_move
             turn = depth % num_agents
             value = 0.0
-            best_move = " "
             if not turn: value = -9999999999.0
             else: value = 9999999999.0
             for move in gameState.getLegalActions(turn):
@@ -217,17 +217,19 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         """
         "*** YOUR CODE HERE ***"
         def Expectimax(gameState, bound, depth, num_agents):
+            best_move = ""
             if bound * num_agents == depth or gameState.isWin() or gameState.isLose():
-                return self.evaluationFunction(gameState), " "
+                return self.evaluationFunction(gameState), best_move
             turn = depth % num_agents
             value = 0.0
-            best_move = ""
             if not turn: value = -9999999999.0
             else: value = 0.0
             for move in gameState.getLegalActions(turn):
                 nxt_val, nxt_move = Expectimax(gameState.generateSuccessor(turn, move), bound, depth + 1, num_agents)
                 if not turn and value < nxt_val: value, best_move = nxt_val, move
-                else: value = value + nxt_val / len(gameState.getLegalActions(turn))
+                else:
+                    prob = 1.0 / float(len(gameState.getLegalActions(turn)))
+                    value = value + prob * nxt_val
             return value, best_move
         res = Expectimax(gameState, self.depth, 0, gameState.getNumAgents())
         return res[1]
