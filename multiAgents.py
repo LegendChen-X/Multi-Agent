@@ -216,9 +216,10 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
+# I do not know why the first method can not work. If you see the message, could you please help me have a look?
         '''
         def Expectimax(gameState, bound, depth, num_agents):
-            best_move = ""
+            best_move = Directions.STOP
             if bound * num_agents == depth or gameState.isWin() or gameState.isLose():
                 return self.evaluationFunction(gameState), best_move
             turn = depth % num_agents
@@ -229,9 +230,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 nxt_val, nxt_move = Expectimax(gameState.generateSuccessor(turn, move), bound, depth + 1, num_agents)
                 if not turn and value < nxt_val: value, best_move = nxt_val, move
                 else:
-                    prob = 1.0 / float(len(gameState.getLegalActions(turn)))
-                    value += prob * nxt_val
-            if turn: value = value / float(len(gameState.getLegalActions(turn)))
+                    value += nxt_val / len(gameState.getLegalActions(turn))
             return value, best_move
         '''
         def Expectimax(gameState, bound, depth, num_agents):
@@ -239,7 +238,6 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             if bound * num_agents == depth or gameState.isWin() or gameState.isLose():
                 return self.evaluationFunction(gameState), best_move
             turn = depth % num_agents
-            value = 0.0
             if not turn:
                 value = -9999999999.0
                 for move in gameState.getLegalActions(turn):
@@ -264,54 +262,99 @@ def betterEvaluationFunction(currentGameState):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    from math import sqrt
-    
     currentPosition = currentGameState.getPacmanPosition()
     currentGhost = currentGameState.getGhostStates()
     foodList = currentGameState.getFood().asList()
     if currentGameState.isWin(): return 999999999.9
     if currentGameState.isLose(): return -999999999.9
     evaluation = 0.0
-    
-    ghostDistance = []
-    for i in currentGameState.getGhostPositions(): ghostDistance.append(manhattanDistance(i,currentPosition))
-    
-    # If any ghost is near you, high danger with low evaluation score.
-    if currentGameState.hasWall(currentPosition[0], currentPosition[1]): return -999999999.9
-    if min(ghostDistance) < 2: evaluation -= 999999999.9
+    '''
     foodDistance = []
     if foodList:
         for i in foodList:
             foodDistance.append(manhattanDistance(i,currentPosition))
+    
     if foodDistance:
-        evaluation -= 1.8 * min(foodDistance)
-        evaluation += sqrt(max(foodDistance))
-    else: return 999999999999.9
-    evaluation -= 1.8 * min(foodDistance)
-    evaluation += max(foodDistance)
-    evaluation -= 40 * len(foodList)
+        for i in range(len(foodDistance)):
+            if foodDistance[i] < 3:
+                evaluation -= foodDistance[i]
+            elif foodDistance[i] < 7:
+                evaluation -= 0.5 * foodDistance[i]
+            else:
+                evaluation -= 0.2 * foodDistance[i]
     
     unscaredGhost= []
     scaredGhost = []
     for i in currentGhost:
         if i.scaredTimer: scaredGhost.append(i)
         else: unscaredGhost.append(i)
+        
     unscaredDistance = []
     scaredDistance = []
     for i in unscaredGhost: unscaredDistance.append(manhattanDistance(i.getPosition(),currentPosition))
     for i in scaredGhost: scaredDistance.append(manhattanDistance(i.getPosition(),currentPosition))
     
-    if unscaredDistance and min(unscaredDistance) > 15:
-        evaluation -= 2.0 / min(unscaredDistance)
-    else: evaluation -= 2.0 / 15.0
-    
-    if scaredDistance: evaluation -= 2 * min(scaredDistance)
-    
-    evaluation -= -200 * len(currentGameState.getCapsules())
-    
-    evaluation += 0.99 * currentGameState.getScore()
+    if unscaredDistance:
+        for i in range(len(unscaredDistance)):
+            if unscaredDistance[i] < 3: evaluation += 3 * unscaredDistance[i]
+            elif unscaredDistance[i] < 7: evaluation += 2 * unscaredDistance[i]
+            else: evaluation += 0.5 * unscaredDistance[i]
+            
+    if scaredDistance:
+        for i in range(len(scaredDistance)):
+            if scaredDistance[i] < 3:
+                evaluation -= 20 * scaredDistance[i]
+            else:
+                evaluation -= 10 * scaredDistance[i]
+        
+    evaluation += 1.5 * currentGameState.getScore()
+    evaluation -= 10*len(foodList)
+    evaluation -= 20 * len(currentGameState.getCapsules())
     
     return evaluation
+    '''
+    activeGhosts = []
+    scaredGhosts = []
+    for ghost in currentGhost:
+        if ghost.scaredTimer: scaredGhosts.append(ghost)
+        else: activeGhosts.append(ghost)
+    evaluation += 1.4 * currentGameState.getScore()
+    evaluation += -12 * len(foodList)
+    evaluation += -25 * len(currentGameState.getCapsules())
+    
+    foodDistances = []
+    activeGhostsDistances = []
+    scaredGhostsDistances = []
+    
+    for i in foodList:
+        foodDistances.append(manhattanDistance(currentPosition,i))
+    
+    for item in activeGhosts:
+        scaredGhostsDistances.append(manhattanDistance(currentPosition,item.getPosition()))
+        
+    for item in scaredGhosts:
+           scaredGhostsDistances.append(manhattanDistance(currentPosition,item.getPosition()))
+           
+    for item in foodDistances:
+        if item < 3: evaluation += -1 * item
+        elif item < 9: evaluation += -0.5 * item
+        else: evaluation += -0.2 * item
+        
+    for item in scaredGhostsDistances:
+        if item < 3:
+            evaluation += -18 * item
+        else:
+            evaluation += -10 * item
+            
+    for item in activeGhostsDistances:
+        if item < 3:
+            evaluation += 3 * item
+        elif item < 9:
+            evaluation += 2.5 * item
+        else:
+            evaluation += 0.1 * item
+    return evaluation
+        
 
 # Abbreviation
 better = betterEvaluationFunction
