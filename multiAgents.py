@@ -27,8 +27,6 @@ class ReflexAgent(Agent):
     it in any way you see fit, so long as you don't touch our method
     headers.
     """
-
-
     def getAction(self, gameState):
         """
         You do not need to change this method, but you're welcome to.
@@ -75,7 +73,7 @@ class ReflexAgent(Agent):
         
         "*** YOUR CODE HERE ***"
         if successorGameState.isLose(): return -999999999
-        evaluation = 0
+        evaluation = 0.0
         foodList = newFood.asList()
         foodDistance = []
         ghostDistance = []
@@ -84,11 +82,11 @@ class ReflexAgent(Agent):
             evaluation -= 0.9 * min(foodDistance)
             evaluation -= (0.1 * sum(foodDistance) / len(foodDistance))
         for i in successorGameState.getGhostPositions(): ghostDistance.append(manhattanDistance(newPos,i))
-        if min(ghostDistance) < 3: evaluation -= 9999999
-        evaluation += 0.2 * min(ghostDistance)
-        if newPos in currentGameState.getFood().asList(): evaluation += 10000
+        if min(ghostDistance) < 3: evaluation -= 99999
+        evaluation -= 0.3 * min(ghostDistance)
+        if newPos in currentGameState.getFood().asList(): evaluation += 999
         for i in newScaredTimes: evaluation += i
-        evaluation += (successorGameState.getScore() - currentGameState.getScore())
+        evaluation += 1.2 * (successorGameState.getScore() - currentGameState.getScore())
         return evaluation
 
 def scoreEvaluationFunction(currentGameState):
@@ -152,24 +150,20 @@ class MinimaxAgent(MultiAgentSearchAgent):
         """
         "*** YOUR CODE HERE ***"
         def Minimax(gameState, bound, depth, num_agents):
+            best_move = Directions.STOP
             if bound * num_agents == depth or gameState.isLose() or gameState.isWin():
-                return self.evaluationFunction(gameState), "Stop"
+                return self.evaluationFunction(gameState), best_move
             turn = depth % num_agents
-            if not turn:
-                max = -99999999999
-                move = ""
-                for i in gameState.getLegalActions(0):
-                    value, action = Minimax(gameState.generateSuccessor(0, i),bound,depth+1,num_agents)
-                    if value > max:
-                        max = value
-                        move = i
-                return max, move
-            else:
-                min = 99999999999
-                for i in gameState.getLegalActions(turn):
-                    value, action = Minimax(gameState.generateSuccessor(turn, i),bound,depth+1,num_agents)
-                    if value < min: min = value
-                return min, " "
+            value = 0
+            if not turn: value = -99999999999
+            if turn: value = 99999999999
+            for move in gameState.getLegalActions(turn):
+                nxt_val, nxt_move = Minimax(gameState.generateSuccessor(turn, move),bound,depth+1,num_agents)
+                if not turn and value < nxt_val:
+                    value, best_move = nxt_val, move
+                if turn and value > nxt_val:
+                    value, best_move = nxt_val, move
+            return value, best_move
         res = Minimax(gameState, self.depth, 0, gameState.getNumAgents())
         return res[1]
 
@@ -216,9 +210,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-# I do not know why the first method can not work. If you see the message, could you please help me have a look?
-        '''
-        def Expectimax(gameState, bound, depth, num_agents):
+        def Expectimax(gameState, depth, bound, num_agents):
             best_move = Directions.STOP
             if bound * num_agents == depth or gameState.isWin() or gameState.isLose():
                 return self.evaluationFunction(gameState), best_move
@@ -227,31 +219,12 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             if not turn: value = -9999999999.0
             else: value = 0.0
             for move in gameState.getLegalActions(turn):
-                nxt_val, nxt_move = Expectimax(gameState.generateSuccessor(turn, move), bound, depth + 1, num_agents)
+                nxt_val, nxt_move = Expectimax(gameState.generateSuccessor(turn, move), depth + 1, bound, num_agents)
                 if not turn and value < nxt_val: value, best_move = nxt_val, move
-                else:
-                    value += nxt_val / len(gameState.getLegalActions(turn))
+                elif turn != 0:
+                    value += nxt_val / float(len(gameState.getLegalActions(turn)))
             return value, best_move
-        '''
-        def Expectimax(gameState, bound, depth, num_agents):
-            best_move = ""
-            if bound * num_agents == depth or gameState.isWin() or gameState.isLose():
-                return self.evaluationFunction(gameState), best_move
-            turn = depth % num_agents
-            if not turn:
-                value = -9999999999.0
-                for move in gameState.getLegalActions(turn):
-                    nxt_val, nxt_move = Expectimax(gameState.generateSuccessor(turn, move), bound, depth + 1, num_agents)
-                    if value < nxt_val: value, best_move = nxt_val, move
-                return value, best_move
-            else:
-                value = 0.0
-                for move in gameState.getLegalActions(turn):
-                    nxt_val, nxt_move = Expectimax(gameState.generateSuccessor(turn, move), bound, depth + 1, num_agents)
-                    value += float(nxt_val)
-                value = value / float(len(gameState.getLegalActions(turn)))
-                return value, best_move
-        res = Expectimax(gameState, self.depth, 0, gameState.getNumAgents())
+        res = Expectimax(gameState, 0, self.depth, gameState.getNumAgents())
         return res[1]
 
 def betterEvaluationFunction(currentGameState):
@@ -268,93 +241,20 @@ def betterEvaluationFunction(currentGameState):
     if currentGameState.isWin(): return 999999999.9
     if currentGameState.isLose(): return -999999999.9
     evaluation = 0.0
-    '''
+    ghostDistance = []
+    for i in currentGhost: ghostDistance.append((manhattanDistance(i.getPosition(),currentPosition)))
     foodDistance = []
-    if foodList:
-        for i in foodList:
-            foodDistance.append(manhattanDistance(i,currentPosition))
-    
-    if foodDistance:
-        for i in range(len(foodDistance)):
-            if foodDistance[i] < 3:
-                evaluation -= foodDistance[i]
-            elif foodDistance[i] < 7:
-                evaluation -= 0.5 * foodDistance[i]
-            else:
-                evaluation -= 0.2 * foodDistance[i]
-    
-    unscaredGhost= []
-    scaredGhost = []
-    for i in currentGhost:
-        if i.scaredTimer: scaredGhost.append(i)
-        else: unscaredGhost.append(i)
-        
-    unscaredDistance = []
-    scaredDistance = []
-    for i in unscaredGhost: unscaredDistance.append(manhattanDistance(i.getPosition(),currentPosition))
-    for i in scaredGhost: scaredDistance.append(manhattanDistance(i.getPosition(),currentPosition))
-    
-    if unscaredDistance:
-        for i in range(len(unscaredDistance)):
-            if unscaredDistance[i] < 3: evaluation += 3 * unscaredDistance[i]
-            elif unscaredDistance[i] < 7: evaluation += 2 * unscaredDistance[i]
-            else: evaluation += 0.5 * unscaredDistance[i]
-            
-    if scaredDistance:
-        for i in range(len(scaredDistance)):
-            if scaredDistance[i] < 3:
-                evaluation -= 20 * scaredDistance[i]
-            else:
-                evaluation -= 10 * scaredDistance[i]
-        
-    evaluation += 1.5 * currentGameState.getScore()
-    evaluation -= 10*len(foodList)
-    evaluation -= 20 * len(currentGameState.getCapsules())
-    
-    return evaluation
-    '''
-    activeGhosts = []
-    scaredGhosts = []
-    for ghost in currentGhost:
-        if ghost.scaredTimer: scaredGhosts.append(ghost)
-        else: activeGhosts.append(ghost)
+    for i in foodList: foodDistance.append(manhattanDistance(i,currentPosition))
+    for i in foodDistance:
+        if i < 3: evaluation -= i
+        elif i < 9: evaluation -= 0.5 * i
+        else: evaluation -= 0.1 * i
+    for i in ghostDistance:
+        if i < 3: evaluation -= 19 * i
+        else: evaluation -= 10 * i
     evaluation += 1.4 * currentGameState.getScore()
     evaluation += -12 * len(foodList)
-    evaluation += -25 * len(currentGameState.getCapsules())
-    
-    foodDistances = []
-    activeGhostsDistances = []
-    scaredGhostsDistances = []
-    
-    for i in foodList:
-        foodDistances.append(manhattanDistance(currentPosition,i))
-    
-    for item in activeGhosts:
-        scaredGhostsDistances.append(manhattanDistance(currentPosition,item.getPosition()))
-        
-    for item in scaredGhosts:
-           scaredGhostsDistances.append(manhattanDistance(currentPosition,item.getPosition()))
-           
-    for item in foodDistances:
-        if item < 3: evaluation += -1 * item
-        elif item < 9: evaluation += -0.5 * item
-        else: evaluation += -0.2 * item
-        
-    for item in scaredGhostsDistances:
-        if item < 3:
-            evaluation += -18 * item
-        else:
-            evaluation += -10 * item
-            
-    for item in activeGhostsDistances:
-        if item < 3:
-            evaluation += 3 * item
-        elif item < 9:
-            evaluation += 2.5 * item
-        else:
-            evaluation += 0.1 * item
+    evaluation += -20 * len(currentGameState.getCapsules())
     return evaluation
-        
-
 # Abbreviation
 better = betterEvaluationFunction
